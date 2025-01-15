@@ -67,8 +67,8 @@ except ModuleNotFoundError as e:
     raise Exception(f"Missing module: {e}")
 
 try:
-    from langfuse.openai import AsyncOpenAI
     from langfuse.decorators import observe
+    from langfuse.openai import AsyncOpenAI
 except ModuleNotFoundError as e:
     logger.warning(f"Langfuse is not installed. Exception: {e}")
     logger.warning(
