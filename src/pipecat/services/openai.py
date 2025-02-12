@@ -242,6 +242,7 @@ class BaseOpenAILLMService(LLMService):
         function_name = ""
         arguments = ""
         tool_call_id = ""
+        print("_process_context")
 
         await self.start_ttfb_metrics()
 

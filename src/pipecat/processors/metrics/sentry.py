@@ -26,6 +26,7 @@ class SentryMetrics(FrameProcessorMetrics):
             logger.warning("Sentry SDK not initialized. Sentry features will be disabled.")
 
     async def start_ttfb_metrics(self, report_only_initial_ttfb):
+        print("start_ttfb_metrics")
         await super().start_ttfb_metrics(report_only_initial_ttfb)
 
         if self._should_report_ttfb and self._sentry_available:
@@ -38,12 +39,14 @@ class SentryMetrics(FrameProcessorMetrics):
             )
 
     async def stop_ttfb_metrics(self):
+        print("stop_ttfb_metrics")
         await super().stop_ttfb_metrics()
 
         if self._sentry_available and self._ttfb_metrics_tx:
             self._ttfb_metrics_tx.finish()
 
     async def start_processing_metrics(self):
+        print("start_processing_metrics")
         await super().start_processing_metrics()
 
         if self._sentry_available:

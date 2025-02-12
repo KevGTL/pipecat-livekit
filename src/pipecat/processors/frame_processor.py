@@ -56,7 +56,7 @@ class FrameProcessor:
 
         # Other properties
         self._allow_interruptions = False
-        self._enable_metrics = False
+        self._enable_metrics = True
         self._enable_usage_metrics = False
         self._report_only_initial_ttfb = False
         self._observer = None
@@ -109,12 +109,15 @@ class FrameProcessor:
         return self._report_only_initial_ttfb
 
     def can_generate_metrics(self) -> bool:
-        return False
+        return True
 
     def set_core_metrics_data(self, data: MetricsData):
         self._metrics.set_core_metrics_data(data)
 
     async def start_ttfb_metrics(self):
+        print("start_ttfb_metrics")
+        print("self.can_generate_metrics()", self.can_generate_metrics())
+        print("self.metrics_enabled", self.metrics_enabled)
         if self.can_generate_metrics() and self.metrics_enabled:
             await self._metrics.start_ttfb_metrics(self._report_only_initial_ttfb)
 
@@ -228,7 +231,8 @@ class FrameProcessor:
             self._clock = frame.clock
             self._task_manager = frame.task_manager
             self._allow_interruptions = frame.allow_interruptions
-            self._enable_metrics = frame.enable_metrics
+            # self._enable_metrics = frame.enable_metrics
+            self._enable_metrics = True
             self._enable_usage_metrics = frame.enable_usage_metrics
             self._report_only_initial_ttfb = frame.report_only_initial_ttfb
             self._observer = frame.observer
