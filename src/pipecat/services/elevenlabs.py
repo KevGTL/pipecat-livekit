@@ -55,7 +55,7 @@ ELEVENLABS_MULTILINGUAL_MODELS = {
 }
 
 
-def language_to_elevenlabs_language(language: Language) -> str | None:
+def language_to_elevenlabs_language(language: Language) -> Optional[str]:
     BASE_LANGUAGES = {
         Language.AR: "ar",
         Language.BG: "bg",
@@ -223,7 +223,7 @@ class ElevenLabsTTSService(WordTTSService, WebsocketService):
     def can_generate_metrics(self) -> bool:
         return True
 
-    def language_to_service_language(self, language: Language) -> str | None:
+    def language_to_service_language(self, language: Language) -> Optional[str]:
         return language_to_elevenlabs_language(language)
 
     def _set_voice_settings(self):
@@ -388,7 +388,11 @@ class ElevenLabsTTSService(WordTTSService, WebsocketService):
     async def _keepalive_task_handler(self):
         while True:
             await asyncio.sleep(10)
-            await self._send_text("")
+            try:
+                await self._send_text("")
+            except websockets.ConnectionClosed as e:
+                logger.warning(f"{self} keepalive error: {e}")
+                break
 
     async def _send_text(self, text: str):
         if self._websocket:
