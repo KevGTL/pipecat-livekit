@@ -115,6 +115,9 @@ class LiveKitTransportClient:
             self.room.on("data_received")(self._on_data_received_wrapper)
             self.room.on("connected")(self._on_connected_wrapper)
             self.room.on("disconnected")(self._on_disconnected_wrapper)
+            self.room.on("participant_attributes_changed")(
+                self._on_participant_attributes_changed_wrapper
+            )
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     async def connect(self):
