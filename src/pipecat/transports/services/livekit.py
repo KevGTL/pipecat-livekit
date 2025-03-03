@@ -61,6 +61,7 @@ class LiveKitCallbacks(BaseModel):
     on_audio_track_unsubscribed: Callable[[str], Awaitable[None]]
     on_data_received: Callable[[bytes, str], Awaitable[None]]
     on_first_participant_joined: Callable[[str], Awaitable[None]]
+    on_participant_updated: Callable[[dict, rtc.RemoteParticipant], Awaitable[None]]
 
 
 class LiveKitTransportClient:
@@ -114,6 +115,9 @@ class LiveKitTransportClient:
             self.room.on("data_received")(self._on_data_received_wrapper)
             self.room.on("connected")(self._on_connected_wrapper)
             self.room.on("disconnected")(self._on_disconnected_wrapper)
+            self.room.on("participant_attributes_changed")(
+                self._on_participant_attributes_changed_wrapper
+            )
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     async def connect(self):
@@ -275,6 +279,14 @@ class LiveKitTransportClient:
             self._async_on_disconnected(), f"{self}::_async_on_disconnected"
         )
 
+    def _on_participant_attributes_changed_wrapper(
+        self, changed_attributes: dict, participant: rtc.RemoteParticipant
+    ):
+        self._task_manager.create_task(
+            self._async_on_participant_updated(changed_attributes, participant),
+            f"{self}::_async_on_participant_updated",
+        )
+
     # Async methods for event handling
     async def _async_on_participant_connected(self, participant: rtc.RemoteParticipant):
         logger.info(f"Participant connected: {participant.identity}")
@@ -324,6 +336,14 @@ class LiveKitTransportClient:
         self._connected = False
         logger.info(f"Disconnected from {self._room_name}. Reason: {reason}")
         await self._callbacks.on_disconnected()
+
+    async def _async_on_participant_updated(
+        self, changed_attributes: dict, participant: rtc.RemoteParticipant
+    ):
+        logger.info(
+            f"Participant {participant.identity} updated. Changed attributes: {changed_attributes}"
+        )
+        await self._callbacks.on_participant_updated(changed_attributes, participant)
 
     async def _process_audio_stream(self, audio_stream: rtc.AudioStream, participant_id: str):
         logger.info(f"Started processing audio stream for participant {participant_id}")
@@ -477,6 +497,7 @@ class LiveKitTransport(BaseTransport):
             on_audio_track_unsubscribed=self._on_audio_track_unsubscribed,
             on_data_received=self._on_data_received,
             on_first_participant_joined=self._on_first_participant_joined,
+            on_participant_updated=self._on_participant_updated,
         )
         self._params = params
 
@@ -496,6 +517,8 @@ class LiveKitTransport(BaseTransport):
         self._register_event_handler("on_first_participant_joined")
         self._register_event_handler("on_participant_left")
         self._register_event_handler("on_call_state_updated")
+        self._register_event_handler("on_dialout_answered")
+        self._register_event_handler("on_dialout_stopped")
 
     def input(self) -> LiveKitInputTransport:
         if not self._input:
@@ -544,6 +567,15 @@ class LiveKitTransport(BaseTransport):
     async def _on_participant_disconnected(self, participant_id: str):
         await self._call_event_handler("on_participant_disconnected", participant_id)
         await self._call_event_handler("on_participant_left", participant_id, "disconnected")
+
+    async def _on_participant_updated(
+        self, changed_attributes: dict, participant: rtc.RemoteParticipant
+    ):
+        if "sip.callStatus" in changed_attributes:
+            if changed_attributes["sip.callStatus"] == "active":
+                await self._call_event_handler("on_dialout_answered", participant.sid)
+            elif changed_attributes["sip.callStatus"] == "hangup":
+                await self._call_event_handler("on_dialout_stopped", participant.sid)
 
     async def _on_audio_track_subscribed(self, participant_id: str):
         await self._call_event_handler("on_audio_track_subscribed", participant_id)

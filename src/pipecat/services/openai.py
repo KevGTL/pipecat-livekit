@@ -65,6 +65,46 @@ from pipecat.services.base_whisper import BaseWhisperSTTService, Transcription
 from pipecat.transcriptions.language import Language
 from pipecat.utils.time import time_now_iso8601
 
+try:
+    from openai import (
+        NOT_GIVEN,
+        AsyncOpenAI,
+        AsyncStream,
+        BadRequestError,
+        DefaultAsyncHttpxClient,
+    )
+    from openai.types.chat import ChatCompletionChunk, ChatCompletionMessageParam
+except ModuleNotFoundError as e:
+    logger.error(f"Exception: {e}")
+    logger.error(
+        "In order to use OpenAI, you need to `pip install pipecat-ai[openai]`. Also, set `OPENAI_API_KEY` environment variable."
+    )
+    raise Exception(f"Missing module: {e}")
+
+try:
+    from langfuse.decorators import observe
+    from langfuse.openai import AsyncOpenAI
+except ModuleNotFoundError as e:
+    logger.warning(f"Langfuse is not installed. Exception: {e}")
+    logger.warning(
+        "Langfuse integration is optional. To enable it, install the Langfuse package with "
+        "`pip install pipecat-ai[langfuse]` and set the `LANGFUSE_HOST`, "
+        "`LANGFUSE_PUBLIC_KEY`, and `LANGFUSE_SECRET_KEY` environment variables."
+    )
+
+    # Dummy observe decorator
+    def observe(*args, **kwargs):
+        def decorator(func):
+            async def wrapper(*func_args, **func_kwargs):
+                # Log or print that the dummy observe is being used, if needed
+                logger.debug("Using dummy observe decorator.")
+                return await func(*func_args, **func_kwargs)
+
+            return wrapper
+
+        return decorator
+
+
 ValidVoice = Literal["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
 
 VALID_VOICES: Dict[str, ValidVoice] = {
@@ -151,6 +191,7 @@ class BaseOpenAILLMService(LLMService):
     def can_generate_metrics(self) -> bool:
         return True
 
+    @observe
     async def get_chat_completions(
         self, context: OpenAILLMContext, messages: List[ChatCompletionMessageParam]
     ) -> AsyncStream[ChatCompletionChunk]:
