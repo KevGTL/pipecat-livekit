@@ -136,6 +136,8 @@ class GladiaSTTService(STTService):
         maximum_duration_without_endpointing: Optional[int] = 10
         audio_enhancer: Optional[bool] = None
         words_accurate_timestamps: Optional[bool] = None
+        custom_vocabulary: Optional[bool] = None
+        custom_vocabulary_config: Optional[dict] = None
 
     def __init__(
         self,
@@ -166,9 +168,12 @@ class GladiaSTTService(STTService):
             "maximum_duration_without_endpointing": params.maximum_duration_without_endpointing,
             "pre_processing": {
                 "audio_enhancer": params.audio_enhancer,
+                "speech_threshold": params.speech_threshold,
             },
             "realtime_processing": {
                 "words_accurate_timestamps": params.words_accurate_timestamps,
+                "custom_vocabulary": params.custom_vocabulary,
+                "custom_vocabulary_config": params.custom_vocabulary_config,
             },
         }
         self._confidence = confidence
