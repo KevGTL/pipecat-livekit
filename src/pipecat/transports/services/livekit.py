@@ -115,9 +115,7 @@ class LiveKitTransportClient:
             self.room.on("data_received")(self._on_data_received_wrapper)
             self.room.on("connected")(self._on_connected_wrapper)
             self.room.on("disconnected")(self._on_disconnected_wrapper)
-            self.room.on("participant_attributes_changed")(
-                self._on_participant_attributes_changed_wrapper
-            )
+            self.room.on("participant_attributes_changed")(self._on_participant_attributes_changed_wrapper)
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     async def connect(self):
@@ -340,9 +338,7 @@ class LiveKitTransportClient:
     async def _async_on_participant_updated(
         self, changed_attributes: dict, participant: rtc.RemoteParticipant
     ):
-        logger.info(
-            f"Participant {participant.identity} updated. Changed attributes: {changed_attributes}"
-        )
+        logger.info(f"Participant {participant.identity} updated. Changed attributes: {changed_attributes}")
         await self._callbacks.on_participant_updated(changed_attributes, participant)
     
     async def _process_audio_stream(self, audio_stream: rtc.AudioStream, participant_id: str):
