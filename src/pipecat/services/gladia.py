@@ -138,6 +138,7 @@ class GladiaSTTService(STTService):
         words_accurate_timestamps: Optional[bool] = None
         custom_vocabulary: Optional[bool] = None
         custom_vocabulary_config: Optional[dict] = None
+        speech_threshold: Optional[float] = None
 
     def __init__(
         self,
